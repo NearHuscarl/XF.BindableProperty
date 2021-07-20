@@ -11,25 +11,28 @@ using System.Xml.XPath;
 using System.IO;
 using System.Diagnostics;
 
-public partial class ModuleWeaver : BaseModuleWeaver {
+public partial class ModuleWeaver : BaseModuleWeaver
+{
 
     public override bool ShouldCleanReference => true;
 
-    public override IEnumerable<string> GetAssembliesForScanning() {
+    public override IEnumerable<string> GetAssembliesForScanning()
+    {
         yield return "netstandard";
         yield return "mscorlib";
         yield return "Xamarin.Forms.Core";
     }
 
-    public override void Execute() {
+    public override void Execute()
+    {
 
-        WeaverTypes.Initialize( this );
+        WeaverTypes.Initialize(this);
 
         var properties = CollectProperties().ToArray();
-        if( properties.Any( p => !p.IsAutoProperty ) )
-            throw new WeavingException( "Only auto properties are supported!" );
+        if (properties.Any(p => !p.IsAutoProperty))
+            throw new WeavingException("Only auto properties are supported!");
 
-        foreach( var property in properties )
+        foreach (var property in properties)
             property.Weave();
     }
 }

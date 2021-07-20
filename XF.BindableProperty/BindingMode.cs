@@ -1,9 +1,11 @@
-﻿namespace XF.BindableProperty {
+﻿namespace XF.BindableProperty
+{
 
     //
     // Zusammenfassung:
     //     Die Richtung der Änderungsweitergabe für Bindungen.
-    public enum XFBindingMode {
+    public enum XFBindingMode
+    {
         //
         // Zusammenfassung:
         //     Gibt bei der Verwendung in Bindungen an, dass die Bindung die Xamarin.Forms.BindableProperty.DefaultBindingMode-Eigenschaft

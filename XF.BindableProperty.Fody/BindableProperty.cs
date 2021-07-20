@@ -8,7 +8,8 @@ using Mono.Cecil.Cil;
 using Mono.Cecil.Rocks;
 using XF.BindableProperty.Fody;
 
-public enum XFBindingMode {
+public enum XFBindingMode
+{
     Default,
     TwoWay,
     OneWay,
@@ -16,13 +17,16 @@ public enum XFBindingMode {
     OneTime
 }
 
-public class BindableProperty {
+public class BindableProperty
+{
 
-    private class PropertyField {
+    private class PropertyField
+    {
         public FieldDefinition Field { get; }
         public FieldDefinition Key { get; }
 
-        public PropertyField( FieldDefinition field, FieldDefinition key ) {
+        public PropertyField(FieldDefinition field, FieldDefinition key)
+        {
             Field = field;
             Key = key;
         }
@@ -48,113 +52,120 @@ public class BindableProperty {
     public bool HasInitializer => Initializers?.Any() ?? false;
 
 
-    public BindableProperty( PropertyDefinition property ) {
+    public BindableProperty(PropertyDefinition property)
+    {
 
         Property = property;
-        PropertyType = property.Module.ImportReference( property.PropertyType );
-        BackingField = property.DeclaringType.Fields.SingleOrDefault( f => f.Name == $"<{property.Name}>k__BackingField" );
+        PropertyType = property.Module.ImportReference(property.PropertyType);
+        BackingField = property.DeclaringType.Fields.SingleOrDefault(f => f.Name == $"<{property.Name}>k__BackingField");
 
-        var attribute = property.GetAttribute( WeaverConstants.BindableAttribute );
+        var attribute = property.GetAttribute(WeaverConstants.BindableAttribute);
 
-        BindingMode = attribute.GetValue( WeaverConstants.BindingMode, XFBindingMode.OneWay );
+        BindingMode = attribute.GetValue(WeaverConstants.BindingMode, XFBindingMode.OneWay);
 
         var typeSystem = property.Module.TypeSystem;
-        ValidateValueMethod = ResolveMethod( attribute.GetValue<string>( WeaverConstants.OnValidateValue ), $"OnValidate{property.Name}Value",
+        ValidateValueMethod = ResolveMethod(attribute.GetValue<string>(WeaverConstants.OnValidateValue), $"OnValidate{property.Name}Value",
             typeSystem.Boolean,
-            WeaverTypes.BindableObject, typeSystem.Object );
-        PropertyChangedMethod = ResolveMethod( attribute.GetValue<string>( WeaverConstants.OnPropertyChanged ), $"On{property.Name}Changed",
+            WeaverTypes.BindableObject, typeSystem.Object);
+        PropertyChangedMethod = ResolveMethod(attribute.GetValue<string>(WeaverConstants.OnPropertyChanged), $"On{property.Name}Changed",
             typeSystem.Void,
-            WeaverTypes.BindableObject, typeSystem.Object, typeSystem.Object );
-        PropertyChangingMethod = ResolveMethod( attribute.GetValue<string>( WeaverConstants.OnPropertyChanging ), $"On{property.Name}Changing",
+            WeaverTypes.BindableObject, typeSystem.Object, typeSystem.Object);
+        PropertyChangingMethod = ResolveMethod(attribute.GetValue<string>(WeaverConstants.OnPropertyChanging), $"On{property.Name}Changing",
             typeSystem.Void,
-            WeaverTypes.BindableObject, typeSystem.Object, typeSystem.Object );
-        CoerceValueMethod = ResolveMethod( attribute.GetValue<string>( WeaverConstants.OnCoerceValue ), $"OnCoerce{property.Name}Value",
+            WeaverTypes.BindableObject, typeSystem.Object, typeSystem.Object);
+        CoerceValueMethod = ResolveMethod(attribute.GetValue<string>(WeaverConstants.OnCoerceValue), $"OnCoerce{property.Name}Value",
             typeSystem.Object,
-            WeaverTypes.BindableObject, typeSystem.Object );
-        DefaultValueCreatorMethod = ResolveMethod( attribute.GetValue<string>( WeaverConstants.OnCreateValue ), $"OnCreate{property.Name}Value",
+            WeaverTypes.BindableObject, typeSystem.Object);
+        DefaultValueCreatorMethod = ResolveMethod(attribute.GetValue<string>(WeaverConstants.OnCreateValue), $"OnCreate{property.Name}Value",
             typeSystem.Object,
-            WeaverTypes.BindableObject );
+            WeaverTypes.BindableObject);
 
-        OwningType = attribute.GetValue<TypeReference>( WeaverConstants.OwningType ) ?? property.DeclaringType;
+        OwningType = attribute.GetValue<TypeReference>(WeaverConstants.OwningType) ?? property.DeclaringType;
 
-        Initializers = FieldInitializer.Create( BackingField );
+        Initializers = FieldInitializer.Create(BackingField);
     }
 
-    private MethodDefinition ResolveMethod( string name, string searchName, TypeReference returnType, params TypeReference[] signature ) {
-        if( !string.IsNullOrEmpty( name ) )
-            return Property.DeclaringType.Methods.SingleOrDefault( m => m.Name == name && m.IsStatic && m.HasSameSignature( returnType, signature ) ) ??
-                throw new WeavingException( $"Couldnt find static method {name} within {Property.DeclaringType} matching the required signature!" );
+    private MethodDefinition ResolveMethod(string name, string searchName, TypeReference returnType, params TypeReference[] signature)
+    {
+        if (!string.IsNullOrEmpty(name))
+            return Property.DeclaringType.Methods.SingleOrDefault(m => m.Name == name && m.IsStatic && m.HasSameSignature(returnType, signature)) ??
+                throw new WeavingException($"Couldnt find static method {name} within {Property.DeclaringType} matching the required signature!");
 
-        return Property.DeclaringType.Methods.SingleOrDefault( m => m.Name == searchName && m.IsStatic && m.HasSameSignature( returnType, signature ) );
+        return Property.DeclaringType.Methods.SingleOrDefault(m => m.Name == searchName && m.IsStatic && m.HasSameSignature(returnType, signature));
     }
 
 
-    public void Weave() {
+    public void Weave()
+    {
 
-        if( !IsAutoProperty )
-            throw new WeavingException( $"Cannot weave property {Property.FullName} as its not an auto property!" );
+        if (!IsAutoProperty)
+            throw new WeavingException($"Cannot weave property {Property.FullName} as its not an auto property!");
 
-        if( Property.GetMethod is null || !Property.GetMethod.IsPublic )
-            throw new WeavingException( $"Cannot weave property {Property.FullName} as it has no publicly available getter!" );
+        if (Property.GetMethod is null || !Property.GetMethod.IsPublic)
+            throw new WeavingException($"Cannot weave property {Property.FullName} as it has no publicly available getter!");
 
         //Weave the static BindableProperty field
         var properties = WeavePropertyField();
 
 
         //Weave getter
-        if( Property.GetMethod != null ) {
+        if (Property.GetMethod != null)
+        {
             Property.GetMethod.Body.Instructions.Clear();
             var il = Property.GetMethod.Body.GetILProcessor();
 
-            il.Emit( OpCodes.Ldarg, 0 );
-            il.Emit( OpCodes.Ldsfld, properties.Field );
-            il.Emit( OpCodes.Call, WeaverTypes.GetValue );
+            il.Emit(OpCodes.Ldarg, 0);
+            il.Emit(OpCodes.Ldsfld, properties.Field);
+            il.Emit(OpCodes.Call, WeaverTypes.GetValue);
 
-            if( PropertyType.IsValueType )
-                il.Emit( OpCodes.Unbox_Any, PropertyType );
+            if (PropertyType.IsValueType)
+                il.Emit(OpCodes.Unbox_Any, PropertyType);
             else
-                il.Emit( OpCodes.Castclass, PropertyType );
+                il.Emit(OpCodes.Castclass, PropertyType);
 
-            il.Emit( OpCodes.Ret );
+            il.Emit(OpCodes.Ret);
         }
 
         //Weave setter
-        if( Property.SetMethod != null ) {
+        if (Property.SetMethod != null)
+        {
             Property.SetMethod.Body.Instructions.Clear();
             var il = Property.SetMethod.Body.GetILProcessor();
 
-            il.Emit( OpCodes.Ldarg, 0 );
-            il.Emit( OpCodes.Ldsfld, IsReadonly ? properties.Key : properties.Field );
-            il.Emit( OpCodes.Ldarg, 1 );
-            if( PropertyType.IsValueType )
-                il.Emit( OpCodes.Box, PropertyType );
+            il.Emit(OpCodes.Ldarg, 0);
+            il.Emit(OpCodes.Ldsfld, IsReadonly ? properties.Key : properties.Field);
+            il.Emit(OpCodes.Ldarg, 1);
+            if (PropertyType.IsValueType)
+                il.Emit(OpCodes.Box, PropertyType);
 
-            il.Emit( OpCodes.Call, IsReadonly ? WeaverTypes.SetReadonlyValue : WeaverTypes.SetValue );
+            il.Emit(OpCodes.Call, IsReadonly ? WeaverTypes.SetReadonlyValue : WeaverTypes.SetValue);
 
-            il.Emit( OpCodes.Ret );
+            il.Emit(OpCodes.Ret);
         }
 
 
         //Remove attribute & backing field
-        Property.CustomAttributes.Remove( Property.GetAttribute( WeaverConstants.BindableAttribute ) );
+        Property.CustomAttributes.Remove(Property.GetAttribute(WeaverConstants.BindableAttribute));
 
         //Remove backing field and strip initializers from constructor
-        Property.DeclaringType.Fields.Remove( BackingField );
-        foreach( var initializer in Initializers )
+        Property.DeclaringType.Fields.Remove(BackingField);
+        foreach (var initializer in Initializers)
             initializer.Strip();
     }
-    private PropertyField WeavePropertyField() {
+    private PropertyField WeavePropertyField()
+    {
 
         //Add static property field
-        var propertyField = new FieldDefinition( Property.Name + "Property", FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.InitOnly, WeaverTypes.BindableProperty );
-        propertyField.CustomAttributes.Add( new CustomAttribute( WeaverTypes.CompilerGeneratedAttributeConstructor ) );
-        Property.DeclaringType.Fields.Add( propertyField );
+        var propertyField = new FieldDefinition(Property.Name + "Property", FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.InitOnly, WeaverTypes.BindableProperty);
+        propertyField.CustomAttributes.Add(new CustomAttribute(WeaverTypes.CompilerGeneratedAttributeConstructor));
+        Property.DeclaringType.Fields.Add(propertyField);
 
         FieldDefinition keyField = null;
-        if( IsReadonly ) {
-            keyField = new FieldDefinition( Property.Name + "PropertyKey", FieldAttributes.Private | FieldAttributes.Static | FieldAttributes.InitOnly, WeaverTypes.BindablePropertyKey );
-            keyField.CustomAttributes.Add( new CustomAttribute( WeaverTypes.CompilerGeneratedAttributeConstructor ) );
-            Property.DeclaringType.Fields.Add( keyField );
+        if (IsReadonly)
+        {
+            keyField = new FieldDefinition(Property.Name + "PropertyKey", FieldAttributes.Private | FieldAttributes.Static | FieldAttributes.InitOnly, WeaverTypes.BindablePropertyKey);
+            keyField.CustomAttributes.Add(new CustomAttribute(WeaverTypes.CompilerGeneratedAttributeConstructor));
+            Property.DeclaringType.Fields.Add(keyField);
         }
 
         //Weave static property field construction
@@ -165,83 +176,88 @@ public class BindableProperty {
 
         var il = cctor.Body.GetILProcessor();
 
-        if( cctor.Body.Instructions.Count > 0 && cctor.Body.Instructions.Last().OpCode == OpCodes.Ret )
-            il.Remove( cctor.Body.Instructions.Last() );
+        if (cctor.Body.Instructions.Count > 0 && cctor.Body.Instructions.Last().OpCode == OpCodes.Ret)
+            il.Remove(cctor.Body.Instructions.Last());
 
         //BindableProperty Create( string propertyName, Type returnType, Type declaringType, object defaultValue = null, BindingMode defaultBindingMode = BindingMode.OneWay, ValidateValueDelegate validateValue = null, BindingPropertyChangedDelegate propertyChanged = null, BindingPropertyChangingDelegate propertyChanging = null, CoerceValueDelegate coerceValue = null, CreateDefaultValueDelegate defaultValueCreator = null )
         //string propertyName
-        il.Emit( OpCodes.Ldstr, Property.Name );
+        il.Emit(OpCodes.Ldstr, Property.Name);
         //Type returnType
-        il.Emit( OpCodes.Ldtoken, PropertyType );
-        il.Emit( OpCodes.Call, WeaverTypes.GetTypeFromHandle );
+        il.Emit(OpCodes.Ldtoken, PropertyType);
+        il.Emit(OpCodes.Call, WeaverTypes.GetTypeFromHandle);
         //Type declaringType
-        il.Emit( OpCodes.Ldtoken, OwningType );
-        il.Emit( OpCodes.Call, WeaverTypes.GetTypeFromHandle );
+        il.Emit(OpCodes.Ldtoken, OwningType);
+        il.Emit(OpCodes.Call, WeaverTypes.GetTypeFromHandle);
         //object defaultValue = null
-        EmitDefaultValue( il );
+        EmitDefaultValue(il);
         //BindingMode defaultBindingMode = BindingMode.OneWay
-        il.Emit( OpCodes.Ldc_I4, (int)BindingMode );
+        il.Emit(OpCodes.Ldc_I4, (int)BindingMode);
 
         //ValidateValueDelegate validateValue = null
-        EmitDelegate( il, WeaverTypes.ValidateValueDelegate.Resolve(), ValidateValueMethod );
+        EmitDelegate(il, WeaverTypes.ValidateValueDelegate.Resolve(), ValidateValueMethod);
         //BindingPropertyChangedDelegate propertyChanged = null
-        EmitDelegate( il, WeaverTypes.BindingPropertyChangedDelegate.Resolve(), PropertyChangedMethod );
+        EmitDelegate(il, WeaverTypes.BindingPropertyChangedDelegate.Resolve(), PropertyChangedMethod);
         //BindingPropertyChangingDelegate propertyChanging = null
-        EmitDelegate( il, WeaverTypes.BindingPropertyChangingDelegate.Resolve(), PropertyChangingMethod );
+        EmitDelegate(il, WeaverTypes.BindingPropertyChangingDelegate.Resolve(), PropertyChangingMethod);
         //CoerceValueDelegate coerceValue = null
-        EmitDelegate( il, WeaverTypes.CoerceValueDelegate.Resolve(), CoerceValueMethod );
+        EmitDelegate(il, WeaverTypes.CoerceValueDelegate.Resolve(), CoerceValueMethod);
         //CreateDefaultValueDelegate defaultValueCreator = null
-        EmitDelegate( il, WeaverTypes.CreateDefaultValueDelegate.Resolve(), DefaultValueCreatorMethod );
+        EmitDelegate(il, WeaverTypes.CreateDefaultValueDelegate.Resolve(), DefaultValueCreatorMethod);
 
         //Property = BindableProperty.Create( ... )
-        il.Emit( OpCodes.Call, IsReadonly ? WeaverTypes.CreateReadonly : WeaverTypes.Create );
-        il.Emit( OpCodes.Stsfld, IsReadonly ? keyField : propertyField );
+        il.Emit(OpCodes.Call, IsReadonly ? WeaverTypes.CreateReadonly : WeaverTypes.Create);
+        il.Emit(OpCodes.Stsfld, IsReadonly ? keyField : propertyField);
 
         //Assign property field from key if readonly
-        if( IsReadonly ) {
-            il.Emit( OpCodes.Ldsfld, keyField );
-            il.Emit( OpCodes.Call, WeaverTypes.GetBindablePropertyFromKey );
-            il.Emit( OpCodes.Stsfld, propertyField );
+        if (IsReadonly)
+        {
+            il.Emit(OpCodes.Ldsfld, keyField);
+            il.Emit(OpCodes.Call, WeaverTypes.GetBindablePropertyFromKey);
+            il.Emit(OpCodes.Stsfld, propertyField);
         }
 
-        il.Emit( OpCodes.Ret );
+        il.Emit(OpCodes.Ret);
 
         cctor.Body.Optimize();
 
-        return new PropertyField( propertyField, keyField );
+        return new PropertyField(propertyField, keyField);
     }
-    private void EmitDelegate( ILProcessor il, TypeDefinition delegateType, MethodDefinition method ) {
-        il.Emit( OpCodes.Ldnull );
-        if( method is null )
+    private void EmitDelegate(ILProcessor il, TypeDefinition delegateType, MethodDefinition method)
+    {
+        il.Emit(OpCodes.Ldnull);
+        if (method is null)
             return;
 
-        il.Emit( OpCodes.Ldftn, method );
-        il.Emit( OpCodes.Newobj, Property.Module.ImportReference( delegateType.GetConstructors().Single() ) );
+        il.Emit(OpCodes.Ldftn, method);
+        il.Emit(OpCodes.Newobj, Property.Module.ImportReference(delegateType.GetConstructors().Single()));
     }
-    private void EmitDefaultValue( ILProcessor il ) {
+    private void EmitDefaultValue(ILProcessor il)
+    {
 
-        if( !HasInitializer ) {
-            DefaultValueGenerator.EmitDefaultValue( il, PropertyType );
+        if (!HasInitializer)
+        {
+            DefaultValueGenerator.EmitDefaultValue(il, PropertyType);
             return;
         }
-        
+
         //Emit field initializer from constructor
         var initializer = Initializers.First();
-        var instructions = initializer.Instructions.Skip( 1 ).Copy();
+        var instructions = initializer.Instructions.Skip(1).Copy();
 
-        if( initializer.HasVariables ) {
+        if (initializer.HasVariables)
+        {
             il.Body.InitLocals = true;
-            foreach( var variable in instructions.CopyVariables() )
-                il.Body.Variables.Add( variable );
+            foreach (var variable in instructions.CopyVariables())
+                il.Body.Variables.Add(variable);
         }
 
-        foreach( var instruction in instructions )
-            il.Append( instruction );
+        foreach (var instruction in instructions)
+            il.Append(instruction);
 
         //Replace stfld with a nop (redirect all potential jumps aswell)
-        il.ReplaceAndUpdateJumps( instructions.Last(), Instruction.Create( OpCodes.Nop ) );
+        il.ReplaceAndUpdateJumps(instructions.Last(), Instruction.Create(OpCodes.Nop));
 
-        if( PropertyType.IsValueType )
-            il.Emit( OpCodes.Box, PropertyType );
+        if (PropertyType.IsValueType)
+            il.Emit(OpCodes.Box, PropertyType);
     }
 }

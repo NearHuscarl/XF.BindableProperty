@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace XF.BindableProperty {
+namespace XF.BindableProperty
+{
 
-    [AttributeUsage( AttributeTargets.Property, AllowMultiple = false )]
-    public class BindableAttribute : Attribute {
+    [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
+    public class BindableAttribute : Attribute
+    {
 
         public XFBindingMode BindingMode { get; set; } = XFBindingMode.OneWay;
 

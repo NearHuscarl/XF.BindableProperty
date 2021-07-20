@@ -7,7 +7,8 @@ using Fody;
 using Mono.Cecil;
 using Mono.Cecil.Rocks;
 
-public static class WeaverTypes {
+public static class WeaverTypes
+{
 
     public static TypeReference BindableObject { get; private set; }
     public static TypeReference BindableProperty { get; private set; }
@@ -39,39 +40,40 @@ public static class WeaverTypes {
     public static MethodReference GetTypeFromHandle { get; private set; }
 
 
-    public static void Initialize( ModuleWeaver weaver ) {
+    public static void Initialize(ModuleWeaver weaver)
+    {
 
-        Type = weaver.Resolve( nameof( Type ) );
-        Enum = weaver.Resolve( nameof( Enum ) );
+        Type = weaver.Resolve(nameof(Type));
+        Enum = weaver.Resolve(nameof(Enum));
 
-        CompilerGeneratedAttribute = weaver.Resolve( nameof( CompilerGeneratedAttribute ) );
-        CompilerGeneratedAttributeConstructor = weaver.ModuleDefinition.ImportReference( CompilerGeneratedAttribute.Resolve().GetConstructors().Single() );
+        CompilerGeneratedAttribute = weaver.Resolve(nameof(CompilerGeneratedAttribute));
+        CompilerGeneratedAttributeConstructor = weaver.ModuleDefinition.ImportReference(CompilerGeneratedAttribute.Resolve().GetConstructors().Single());
 
-        RuntimeTypeHandle = weaver.Resolve( nameof( RuntimeTypeHandle ) );
-        GetTypeFromHandle = weaver.ModuleDefinition.ImportReference( Type.Resolve().Methods.Single( m => m.Name == nameof( System.Type.GetTypeFromHandle ) ) );
+        RuntimeTypeHandle = weaver.Resolve(nameof(RuntimeTypeHandle));
+        GetTypeFromHandle = weaver.ModuleDefinition.ImportReference(Type.Resolve().Methods.Single(m => m.Name == nameof(System.Type.GetTypeFromHandle)));
 
-        BindingMode = weaver.Resolve( nameof( BindingMode ) );
-        BindableObject = weaver.Resolve( nameof( BindableObject ) );
-        BindableProperty = weaver.Resolve( nameof( BindableProperty ) );
-        BindablePropertyKey = weaver.Resolve( nameof( BindablePropertyKey ) );
+        BindingMode = weaver.Resolve(nameof(BindingMode));
+        BindableObject = weaver.Resolve(nameof(BindableObject));
+        BindableProperty = weaver.Resolve(nameof(BindableProperty));
+        BindablePropertyKey = weaver.Resolve(nameof(BindablePropertyKey));
 
-        GetBindablePropertyFromKey = weaver.ModuleDefinition.ImportReference( BindablePropertyKey.Resolve().Properties.Single( m => m.Name == "BindableProperty" ).GetMethod );
+        GetBindablePropertyFromKey = weaver.ModuleDefinition.ImportReference(BindablePropertyKey.Resolve().Properties.Single(m => m.Name == "BindableProperty").GetMethod);
 
-        SetValue = weaver.ModuleDefinition.ImportReference( BindableObject.Resolve().Methods.Single( m => m.Name == "SetValue" && m.IsPublic && m.Parameters.First().ParameterType.Name == "BindableProperty" ) );
-        SetReadonlyValue = weaver.ModuleDefinition.ImportReference( BindableObject.Resolve().Methods.Single( m => m.Name == "SetValue" && m.IsPublic && m.Parameters.First().ParameterType.Name == "BindablePropertyKey" ) );
-        GetValue = weaver.ModuleDefinition.ImportReference( BindableObject.Resolve().Methods.Single( m => m.Name == "GetValue" && m.IsPublic && m.Parameters.First().ParameterType.Name == "BindableProperty" ) );
+        SetValue = weaver.ModuleDefinition.ImportReference(BindableObject.Resolve().Methods.Single(m => m.Name == "SetValue" && m.IsPublic && m.Parameters.First().ParameterType.Name == "BindableProperty"));
+        SetReadonlyValue = weaver.ModuleDefinition.ImportReference(BindableObject.Resolve().Methods.Single(m => m.Name == "SetValue" && m.IsPublic && m.Parameters.First().ParameterType.Name == "BindablePropertyKey"));
+        GetValue = weaver.ModuleDefinition.ImportReference(BindableObject.Resolve().Methods.Single(m => m.Name == "GetValue" && m.IsPublic && m.Parameters.First().ParameterType.Name == "BindableProperty"));
 
-        Create = weaver.ModuleDefinition.ImportReference( BindableProperty.Resolve().Methods.Single( m => m.Name == "Create" && m.IsPublic && !m.HasGenericParameters ) );
-        CreateAttached = weaver.ModuleDefinition.ImportReference( BindableProperty.Resolve().Methods.Single( m => m.Name == "CreateAttached" && m.IsPublic && !m.HasGenericParameters ) );
-        CreateReadonly = weaver.ModuleDefinition.ImportReference( BindableProperty.Resolve().Methods.Single( m => m.Name == "CreateReadOnly" && m.IsPublic && !m.HasGenericParameters ) );
-        CreateAttachedReadonly = weaver.ModuleDefinition.ImportReference( BindableProperty.Resolve().Methods.Single( m => m.Name == "CreateAttachedReadOnly" && m.IsPublic && !m.HasGenericParameters ) );
+        Create = weaver.ModuleDefinition.ImportReference(BindableProperty.Resolve().Methods.Single(m => m.Name == "Create" && m.IsPublic && !m.HasGenericParameters));
+        CreateAttached = weaver.ModuleDefinition.ImportReference(BindableProperty.Resolve().Methods.Single(m => m.Name == "CreateAttached" && m.IsPublic && !m.HasGenericParameters));
+        CreateReadonly = weaver.ModuleDefinition.ImportReference(BindableProperty.Resolve().Methods.Single(m => m.Name == "CreateReadOnly" && m.IsPublic && !m.HasGenericParameters));
+        CreateAttachedReadonly = weaver.ModuleDefinition.ImportReference(BindableProperty.Resolve().Methods.Single(m => m.Name == "CreateAttachedReadOnly" && m.IsPublic && !m.HasGenericParameters));
 
-        ValidateValueDelegate = weaver.ModuleDefinition.ImportReference( BindableProperty.Resolve().NestedTypes.Single( t => t.Name == "ValidateValueDelegate" && !t.HasGenericParameters ) );
-        BindingPropertyChangedDelegate = weaver.ModuleDefinition.ImportReference( BindableProperty.Resolve().NestedTypes.Single( t => t.Name == "BindingPropertyChangedDelegate" && !t.HasGenericParameters ) );
-        BindingPropertyChangingDelegate = weaver.ModuleDefinition.ImportReference( BindableProperty.Resolve().NestedTypes.Single( t => t.Name == "BindingPropertyChangingDelegate" && !t.HasGenericParameters ) );
-        CoerceValueDelegate = weaver.ModuleDefinition.ImportReference( BindableProperty.Resolve().NestedTypes.Single( t => t.Name == "CoerceValueDelegate" && !t.HasGenericParameters ) );
-        CreateDefaultValueDelegate = weaver.ModuleDefinition.ImportReference( BindableProperty.Resolve().NestedTypes.Single( t => t.Name == "CreateDefaultValueDelegate" && !t.HasGenericParameters ) );
+        ValidateValueDelegate = weaver.ModuleDefinition.ImportReference(BindableProperty.Resolve().NestedTypes.Single(t => t.Name == "ValidateValueDelegate" && !t.HasGenericParameters));
+        BindingPropertyChangedDelegate = weaver.ModuleDefinition.ImportReference(BindableProperty.Resolve().NestedTypes.Single(t => t.Name == "BindingPropertyChangedDelegate" && !t.HasGenericParameters));
+        BindingPropertyChangingDelegate = weaver.ModuleDefinition.ImportReference(BindableProperty.Resolve().NestedTypes.Single(t => t.Name == "BindingPropertyChangingDelegate" && !t.HasGenericParameters));
+        CoerceValueDelegate = weaver.ModuleDefinition.ImportReference(BindableProperty.Resolve().NestedTypes.Single(t => t.Name == "CoerceValueDelegate" && !t.HasGenericParameters));
+        CreateDefaultValueDelegate = weaver.ModuleDefinition.ImportReference(BindableProperty.Resolve().NestedTypes.Single(t => t.Name == "CreateDefaultValueDelegate" && !t.HasGenericParameters));
     }
-    private static TypeReference Resolve( this ModuleWeaver weaver, string typename ) 
-        => weaver.ModuleDefinition.ImportReference( weaver.FindTypeDefinition( typename ) ?? throw new WeavingException( $"Couldnt find {typename}!" ) );
+    private static TypeReference Resolve(this ModuleWeaver weaver, string typename)
+        => weaver.ModuleDefinition.ImportReference(weaver.FindTypeDefinition(typename) ?? throw new WeavingException($"Couldnt find {typename}!"));
 }

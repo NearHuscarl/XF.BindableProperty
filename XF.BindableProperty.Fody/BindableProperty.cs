@@ -19,7 +19,6 @@ public enum XFBindingMode
 
 public class BindableProperty
 {
-
     private class PropertyField
     {
         public FieldDefinition Field { get; }
@@ -50,11 +49,13 @@ public class BindableProperty
     public bool IsAutoProperty => BackingField != null;
     public bool IsReadonly => Property.SetMethod is null || !Property.SetMethod.IsPublic;
     public bool HasInitializer => Initializers?.Any() ?? false;
+    
+    private ModuleWeaver _weaver;
+    private WeaverTypes WeaverTypes => _weaver.Types;
 
-
-    public BindableProperty(PropertyDefinition property)
+    public BindableProperty(ModuleWeaver weaver, PropertyDefinition property)
     {
-
+        _weaver = weaver;
         Property = property;
         PropertyType = property.Module.ImportReference(property.PropertyType);
         BackingField = property.DeclaringType.Fields.SingleOrDefault(f => f.Name == $"<{property.Name}>k__BackingField");
@@ -97,7 +98,6 @@ public class BindableProperty
 
     public void Weave()
     {
-
         if (!IsAutoProperty)
             throw new WeavingException($"Cannot weave property {Property.FullName} as its not an auto property!");
 

@@ -6,43 +6,41 @@ using System.Text;
 using Fody;
 using Mono.Cecil;
 using Mono.Cecil.Rocks;
+using XF.BindableProperty.Fody.Extensions;
 
-public static class WeaverTypes
+public class WeaverTypes
 {
+    public TypeReference BindableObject { get; private set; }
+    public TypeReference BindableProperty { get; private set; }
+    public TypeReference BindablePropertyKey { get; private set; }
 
-    public static TypeReference BindableObject { get; private set; }
-    public static TypeReference BindableProperty { get; private set; }
-    public static TypeReference BindablePropertyKey { get; private set; }
+    public MethodReference Create { get; private set; }
+    public MethodReference CreateAttached { get; private set; }
+    public MethodReference CreateReadonly { get; private set; }
+    public MethodReference CreateAttachedReadonly { get; private set; }
+    public MethodReference SetValue { get; private set; }
+    public MethodReference SetReadonlyValue { get; private set; }
+    public MethodReference GetValue { get; private set; }
+    public MethodReference GetBindablePropertyFromKey { get; private set; }
 
-    public static MethodReference Create { get; private set; }
-    public static MethodReference CreateAttached { get; private set; }
-    public static MethodReference CreateReadonly { get; private set; }
-    public static MethodReference CreateAttachedReadonly { get; private set; }
-    public static MethodReference SetValue { get; private set; }
-    public static MethodReference SetReadonlyValue { get; private set; }
-    public static MethodReference GetValue { get; private set; }
-    public static MethodReference GetBindablePropertyFromKey { get; private set; }
+    public TypeReference BindingMode { get; private set; }
+    public TypeReference ValidateValueDelegate { get; private set; }
+    public TypeReference BindingPropertyChangedDelegate { get; private set; }
+    public TypeReference BindingPropertyChangingDelegate { get; private set; }
+    public TypeReference CoerceValueDelegate { get; private set; }
+    public TypeReference CreateDefaultValueDelegate { get; private set; }
 
-    public static TypeReference BindingMode { get; private set; }
-    public static TypeReference ValidateValueDelegate { get; private set; }
-    public static TypeReference BindingPropertyChangedDelegate { get; private set; }
-    public static TypeReference BindingPropertyChangingDelegate { get; private set; }
-    public static TypeReference CoerceValueDelegate { get; private set; }
-    public static TypeReference CreateDefaultValueDelegate { get; private set; }
+    public TypeReference Type { get; private set; }
+    public TypeReference Enum { get; private set; }
 
-    public static TypeReference Type { get; private set; }
-    public static TypeReference Enum { get; private set; }
+    public TypeReference CompilerGeneratedAttribute { get; private set; }
+    public MethodReference CompilerGeneratedAttributeConstructor { get; private set; }
 
-    public static TypeReference CompilerGeneratedAttribute { get; private set; }
-    public static MethodReference CompilerGeneratedAttributeConstructor { get; private set; }
+    public TypeReference RuntimeTypeHandle { get; private set; }
+    public MethodReference GetTypeFromHandle { get; private set; }
 
-    public static TypeReference RuntimeTypeHandle { get; private set; }
-    public static MethodReference GetTypeFromHandle { get; private set; }
-
-
-    public static void Initialize(ModuleWeaver weaver)
+    public WeaverTypes(ModuleWeaver weaver)
     {
-
         Type = weaver.Resolve(nameof(Type));
         Enum = weaver.Resolve(nameof(Enum));
 
@@ -74,6 +72,4 @@ public static class WeaverTypes
         CoerceValueDelegate = weaver.ModuleDefinition.ImportReference(BindableProperty.Resolve().NestedTypes.Single(t => t.Name == "CoerceValueDelegate" && !t.HasGenericParameters));
         CreateDefaultValueDelegate = weaver.ModuleDefinition.ImportReference(BindableProperty.Resolve().NestedTypes.Single(t => t.Name == "CreateDefaultValueDelegate" && !t.HasGenericParameters));
     }
-    private static TypeReference Resolve(this ModuleWeaver weaver, string typename)
-        => weaver.ModuleDefinition.ImportReference(weaver.FindTypeDefinition(typename) ?? throw new WeavingException($"Couldnt find {typename}!"));
 }

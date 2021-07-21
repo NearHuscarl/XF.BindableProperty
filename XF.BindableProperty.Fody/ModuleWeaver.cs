@@ -25,12 +25,8 @@ public partial class ModuleWeaver : BaseModuleWeaver
 
     public override void Execute()
     {
-
-        WeaverTypes.Initialize(this);
-
+        Types = new WeaverTypes(this);
         var properties = CollectProperties().ToArray();
-        if (properties.Any(p => !p.IsAutoProperty))
-            throw new WeavingException("Only auto properties are supported!");
 
         foreach (var property in properties)
             property.Weave();

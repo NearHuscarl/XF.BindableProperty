@@ -6,11 +6,10 @@ using Mono.Cecil;
 
 public partial class ModuleWeaver
 {
-
     private IEnumerable<BindableProperty> CollectProperties()
         => from type in ModuleDefinition.Types
-           where type.Inherits(WeaverTypes.BindableObject.Resolve())
+           where type.Inherits(Types.BindableObject.Resolve())
            from property in type.Properties
            where property.HasAttribute(WeaverConstants.BindableAttribute)
-           select new BindableProperty(property);
+           select new BindableProperty(this, property);
 }

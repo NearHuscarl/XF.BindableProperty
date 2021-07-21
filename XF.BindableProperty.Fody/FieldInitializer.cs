@@ -57,7 +57,7 @@ public class FieldInitializer
         return new FieldInitializer(field, ctor, instructions.ToArray());
     }
     public static IEnumerable<FieldInitializer> Create(FieldDefinition field)
-        => field.DeclaringType.GetConstructors().Select(ctor => Create(field, ctor)).Where(i => i != null).ToArray();
+        => field?.DeclaringType.GetConstructors().Select(ctor => Create(field, ctor)).Where(i => i != null).ToArray();
 
 
     public void Strip()
